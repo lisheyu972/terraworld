@@ -1,0 +1,62 @@
+dtype: bfloat16
+flux_path: /data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21/
+glor_control:
+  alpha_init: 0.0
+  ctrl_dim: 512
+  disable_omini_condition: false
+  enable: true
+  global_memory:
+    pool_size: 4
+  inject_blocks: middle_late
+  local_retrieval:
+    patch_size: 3
+  task: super_resolution
+  tasks:
+    super_resolution:
+      in_channels: 3
+      use_scale_embedding: false
+model:
+  adapter_names:
+  - text
+  - main
+  - condition
+  independent_condition: false
+train:
+  accumulate_grad_batches: 1
+  batch_size: 8
+  condition_type: sar_to_optical
+  dataloader_workers: 8
+  dataset:
+    drop_image_prob: 0.05
+    drop_text_prob: 0.1
+    image_size:
+    - 256
+    - 256
+    include_splits:
+    - train
+    random_flip: true
+    root: /data/dxc/grsm/datasets/lin/grsm_opt_sar/
+  gradient_checkpointing: true
+  gradient_clip_val: 0.5
+  lora_config:
+    init_lora_weights: gaussian
+    lora_alpha: 32
+    r: 32
+    target_modules: (.*x_embedder|.*time_text_embed\.(timestep_embedder|guidance_embedder|text_embedder)\.linear_[12]|.*(?<!single_)transformer_blocks\.[0-9]+\.norm1\.linear|.*(?<!single_)transformer_blocks\.[0-9]+\.attn\.to_k|.*(?<!single_)transformer_blocks\.[0-9]+\.attn\.to_q|.*(?<!single_)transformer_blocks\.[0-9]+\.attn\.to_v|.*(?<!single_)transformer_blocks\.[0-9]+\.attn\.to_out\.0|.*(?<!single_)transformer_blocks\.[0-9]+\.ff\.net\.0\.proj|.*(?<!single_)transformer_blocks\.[0-9]+\.ff\.net\.2|.*single_transformer_blocks\.[0-9]+\.norm\.linear|.*single_transformer_blocks\.[0-9]+\.proj_mlp|.*single_transformer_blocks\.[0-9]+\.proj_out|.*single_transformer_blocks\.[0-9]+\.attn\.to_k|.*single_transformer_blocks\.[0-9]+\.attn\.to_q|.*single_transformer_blocks\.[0-9]+\.attn\.to_v|.*single_transformer_blocks\.[0-9]+\.attn\.to_out)
+  max_steps: 30000
+  optimizer:
+    params:
+      betas:
+      - 0.9
+      - 0.999
+      eps: 1.0e-08
+      lr: 0.0001
+      weight_decay: 0.01
+    type: AdamW
+  print_every_n_steps: 10
+  sample_interval: 1000000
+  save_interval: 1000
+  save_path: "/data/dxc/omini_four_tasks_bundle/translation/runs/sar_to_optical_glor_control"
+  wandb:
+    project: OminiControl-SAR-to-Optical-GLoR-Control
+transformer_path: /data/dxc/grsm/flux1/runs/flux_git10m_full/checkpoint-8000-diffusers/

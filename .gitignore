@@ -1,0 +1,9 @@
+paths.env
+translation/runtime/
+translation/runs/
+translation/outputs/
+inpaint/runtime/
+inpaint/runs/
+inpaint/outputs/
+**/__pycache__/
+**/*.pyc

@@ -1,0 +1,103 @@
+# Complete FLUX pipeline (VAE, text encoders, tokenizers and scheduler).
+flux_path: "/data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21"
+transformer_path: "/data/dxc/grsm/flux1/runs/flux_git10m_continue_from_8000/checkpoint-16000-diffusers"
+dtype: "bfloat16"
+
+model:
+  independent_condition: false
+  # Branch order: text, generated image, context frame 0, context frame 1.
+  adapter_names: ["text", "main", "condition", "condition"]
+
+# Temporal dual-frame retrieval injected into the evolving main hidden state.
+glor_control:
+  enable: true
+  task: "frame_prediction"
+  # Must remain false: MIQ-MMA injects metadata into both condition K branches.
+  disable_omini_condition: false
+  ctrl_dim: 512
+  inject_blocks: "middle_late"
+  alpha_init: 0.0
+  global_memory:
+    pool_size: 4
+  local_retrieval:
+    patch_size: 3
+  tasks:
+    frame_prediction:
+      in_channels: 3
+      use_scale_embedding: false
+      use_temporal_embedding: true
+      temporal_offset_scale: 1.0
+
+# MIQ-MMA Stage A: no metadata tokens and no position-ID changes.
+metadata_qkv:
+  enabled: true
+  condition_metadata_dim: 10
+  target_metadata_dim: 10
+  metadata_hidden_dim: 256
+
+  fields: ["month", "day", "center_lat", "center_lon"]
+  encoding:
+    month: "sin_cos_period_12"
+    day: "sin_cos_period_31"
+    center_lat: "divide_by_90"
+    center_lon: "divide_by_180"
+    append_observed_masks: true
+    condition_layout: "one_vector_per_context_frame"
+
+  target_to_q: true
+  condition_to_k: true
+  condition_to_v: false
+  pair_to_q: false
+  gate_init: 0.0
+  projection_init_std: 0.001
+  inject_layers: "all"
+  inject_before_rope: true
+
+train:
+  batch_size: 1
+  accumulate_grad_batches: 4
+  dataloader_workers: 8
+  print_every_n_steps: 10
+  save_interval: 1000
+  sample_interval: 1000000
+  max_steps: 30000
+  gradient_checkpointing: true
+  gradient_clip_val: 0.5
+  save_path: "/data/dxc/omini_four_tasks_bundle/translation/runs/fmow_frame_prediction_glor_control_miq_mma_zero_gate32"
+  condition_type: "frame_prediction"
+
+  dataset:
+    root: "/data/zjz/fmow_processed"
+    index_path: "/data/zjz/fmow_processed/index.jsonl"
+    source_splits: ["train"]
+    include_partitions: ["train"]
+    split_ratios:
+      train: 0.98
+      val: 0.01
+      test: 0.01
+    split_seed: 42
+    image_size: [512, 512]
+    target_mode: "all"
+    include_metadata: true
+    include_temporal_offsets: true
+    drop_text_prob: 0.1
+    drop_image_prob: 0.05
+    random_flip: true
+    validate_files: false
+
+  lora_config:
+    r: 32
+    lora_alpha: 32
+    init_lora_weights: "gaussian"
+    target_modules: ".*x_embedder"
+
+  optimizer:
+    type: "AdamW"
+    params:
+      lr: 0.0001
+      betas: [0.9, 0.999]
+      eps: 0.00000001
+      weight_decay: 0.01
+
+  wandb:
+    project: "GLoR-MIQ-MMA-Omini-fMOW-Frame-Prediction"

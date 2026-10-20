@@ -1,0 +1,92 @@
+flux_path: "/data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21/"
+transformer_path: "/data/dxc/grsm/flux1/outputs/checkpoint-3000/"
+dtype: "bfloat16"
+
+model:
+  independent_condition: false
+  adapter_names: ["text", "main", "condition"]
+
+glor_control:
+  enable: true
+  task: "inpainting"
+  disable_omini_condition: false
+  ctrl_dim: 512
+  inject_blocks: "middle_late"
+  alpha_init: 0.0
+  global_memory:
+    pool_size: 4
+  local_retrieval:
+    patch_size: 3
+    dilations: [1, 2, 4]
+    min_visible_fraction: 0.5
+  tasks:
+    inpainting:
+      in_channels: 4
+      use_scale_embedding: false
+      encoder_max_size: 128
+      mask_loss_weight: 2.0
+
+metadata_qkv:
+  enabled: true
+  condition_metadata_dim: 10
+  target_metadata_dim: 10
+  metadata_hidden_dim: 256
+  fields: ["month", "day", "center_lat", "center_lon"]
+  encoding:
+    month: "sin_cos_period_12"
+    day: "sin_cos_period_31"
+    center_lat: "divide_by_90"
+    center_lon: "divide_by_180"
+    append_observed_masks: true
+  target_to_q: true
+  condition_to_k: true
+  condition_to_v: false
+  pair_to_q: false
+  gate_init: 0.0
+  projection_init_std: 0.001
+  inject_layers: "all"
+  inject_before_rope: true
+
+train:
+  batch_size: 1
+  accumulate_grad_batches: 4
+  dataloader_workers: 8
+  print_every_n_steps: 10
+  save_interval: 1000
+  sample_interval: 1000000
+  max_steps: 30000
+  gradient_checkpointing: true
+  gradient_clip_val: 0.5
+  save_path: "/data/dxc/omini_four_tasks_bundle/inpaint/runs/fmow_inpaint_glor_control_miq_mma_zero_gate"
+  condition_type: "fmow_inpaint"
+
+  dataset:
+    root: "/data/zjz/fmow_processed/"
+    index_path: "/data/zjz/fmow_processed/index.jsonl"
+    source_splits: ["train"]
+    test_root: "/data/zjz/fmow_test_processed"
+    test_index_path: "/data/zjz/fmow_test_processed/index.jsonl"
+    test_source_splits: ["test"]
+    image_size: [512, 512]
+    include_metadata: true
+    drop_text_prob: 0.1
+    drop_image_prob: 0.05
+    random_flip: true
+    validate_files: true
+
+  lora_config:
+    r: 32
+    lora_alpha: 32
+    init_lora_weights: "gaussian"
+    target_modules: ".*x_embedder"
+
+  optimizer:
+    type: "AdamW"
+    params:
+      lr: 0.0001
+      betas: [0.9, 0.999]
+      eps: 0.00000001
+      weight_decay: 0.0001
+
+  wandb:
+    project: "GLoR-MIQ-MMA-Omini-fMOW-Inpainting"

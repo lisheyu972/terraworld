@@ -1,0 +1,66 @@
+# Load the complete original FLUX pipeline, including its bundled transformer.
+# Deliberately do not add transformer_path here.
+flux_path: "/data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21/"
+dtype: "bfloat16"
+
+model:
+  independent_condition: false
+  adapter_names: ["text", "main", "condition"]
+
+glor_control:
+  enable: true
+  task: "super_resolution"
+  # Keep the original NIR Omini branch by default. The launch script can
+  # override this through OMINI_KEEP_OMINI_CONDITION.
+  disable_omini_condition: false
+  ctrl_dim: 512
+  inject_blocks: "middle_late"
+  alpha_init: 0.0
+  global_memory:
+    pool_size: 4
+  local_retrieval:
+    patch_size: 3
+  tasks:
+    # NIR-to-optical translation uses GLoR's single-condition path without
+    # a super-resolution scale embedding.
+    super_resolution:
+      in_channels: 3
+      use_scale_embedding: false
+
+train:
+  batch_size: 1
+  accumulate_grad_batches: 4
+  dataloader_workers: 8
+  print_every_n_steps: 10
+  save_interval: 1000
+  sample_interval: 1000000
+  max_steps: 30000
+  gradient_checkpointing: true
+  gradient_clip_val: 0.5
+  save_path: "/data/dxc/omini_four_tasks_bundle/translation/runs/nir_to_optical_glor_control"
+  condition_type: "nir_to_optical"
+
+  dataset:
+    root: "/data/dxc/grsm/datasets/lin/grsm_opt_nir_whu/"
+    include_splits: ["train"]
+    image_size: [512, 512]
+    drop_text_prob: 0.1
+    drop_image_prob: 0.05
+    random_flip: true
+
+  lora_config:
+    r: 32
+    lora_alpha: 32
+    init_lora_weights: "gaussian"
+    target_modules: ".*x_embedder"
+
+  optimizer:
+    type: "AdamW"
+    params:
+      lr: 0.0001
+      betas: [0.9, 0.999]
+      eps: 0.00000001
+      weight_decay: 0.01
+
+  wandb:
+    project: "OminiControl-NIR-to-Optical-GLoR-Control"
