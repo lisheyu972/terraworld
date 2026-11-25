@@ -41,15 +41,22 @@ You can also export these variables before invoking a launcher. Values set in `p
 
 The default model and dataset paths are under `assets/models/` and `assets/datasets/` at the repository root. Each fMOW index defaults to `index.jsonl` inside its dataset directory.
 
+For AID super-resolution, set `FLUX_MODEL_DIR`, `SR_TRANSFORMER_DIR`, and `AID_DATA_ROOT` in `paths.env`. The required directory layout and metadata are described in the [AID dataset guide](super_resolution/docs/FluxSR-FTD_AID_README.md).
+
 ## Train
 
-Set `GPU_IDS` to the GPU indices available on your system. `BATCH_SIZE` sets the batch size per GPU.
+Set `GPU_IDS` to the GPU indices available on your system. For translation and inpainting, use `BATCH_SIZE` to set the batch size per GPU.
 
 ```bash
 GPU_IDS=0 bash translation/train/script/train_fmow_frame_prediction_more_layers_glor_control_miq_mma.sh
 GPU_IDS=0 bash translation/train/script/train_nir_to_optical_more_layers_glor_control.sh
 GPU_IDS=0 bash translation/train/script/train_sar_to_optical_more_layers_glor_control.sh
 GPU_IDS=0 bash inpaint/train/script/train_fmow_inpaint_more_layers_glor_control_miq_mma.sh
+
+# AID super-resolution at ×2, ×4, and ×8
+EXPERIMENT=x2_glor GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_scale_ablation.sh
+GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_ftd_rsbackbone_glor.sh
+EXPERIMENT=x8_glor GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_scale_ablation.sh
 ```
 
 The following example trains fMOW frame prediction on four GPUs.
@@ -60,6 +67,8 @@ GPU_IDS=0,1,2,3 BATCH_SIZE=2 \
 ```
 
 These launchers initialize new LoRA weights from the pretrained model. Resuming the complete training state of an earlier run requires a separate implementation.
+
+For LoRA-only super-resolution training at ×2 or ×8, set `EXPERIMENT=x2` or `EXPERIMENT=x8`. The ×4 LoRA-only launcher is `super_resolution/train/script/train_aid_fluxsr_ftd_rsbackbone_best.sh`. Set `SWANLAB_API_KEY` to log super-resolution training in SwanLab.
 
 ## Run inference
 
@@ -83,20 +92,16 @@ You can append inference arguments to a launcher command, for example `--max-sam
 
 ## Super-resolution on AID
 
-FluxSR-FTD with GLoR supports ×2, ×4, and ×8 super-resolution at an output size of 512 × 512 pixels. Set `FLUX_MODEL_DIR`, `SR_TRANSFORMER_DIR`, and `AID_DATA_ROOT` in `paths.env`. Set `SWANLAB_API_KEY` to enable training logs in SwanLab. See the [AID dataset guide](super_resolution/docs/FluxSR-FTD_AID_README.md) for the required directory layout and metadata.
+FluxSR-FTD with GLoR supports ×2, ×4, and ×8 super-resolution at an output size of 512 × 512 pixels.
 
 ```bash
-EXPERIMENT=x2_glor GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_scale_ablation.sh
-GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_ftd_rsbackbone_glor.sh
-EXPERIMENT=x8_glor GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_scale_ablation.sh
-
 SCALE=4 CKPT=/path/to/checkpoints/sr GPU_ID=0 \
   bash super_resolution/train/script/infer_aid_fluxsr_ftd.sh
 ```
 
 Set `SCALE` to match the checkpoint. Super-resolution checkpoints use `default.safetensors` for LoRA and `glor_control.pt` for GLoR. Inference saves PNG predictions, comparison panels, and `manifest.json` under `super_resolution/outputs/`. Use `--visualization-count 0` to skip the panels.
 
-For LoRA-only training at ×2 or ×8, set `EXPERIMENT=x2` or `EXPERIMENT=x8`. The ×4 LoRA-only launcher is `super_resolution/train/script/train_aid_fluxsr_ftd_rsbackbone_best.sh`. For LoRA-only inference, set `CONFIG` to the matching YAML, such as `train/config/aid_fluxsr_ftd_rsbackbone_x2.yaml`.
+For LoRA-only inference, set `CONFIG` to the matching YAML, such as `train/config/aid_fluxsr_ftd_rsbackbone_x2.yaml`.
 
 ## Configuration and outputs
 
