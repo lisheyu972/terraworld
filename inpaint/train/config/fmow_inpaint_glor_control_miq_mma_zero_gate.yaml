@@ -1,5 +1,5 @@
-flux_path: "/data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21/"
-transformer_path: "/data/dxc/grsm/flux1/outputs/checkpoint-3000/"
+flux_path: "../assets/models/flux"
+transformer_path: "../assets/models/inpaint-transformer"
 dtype: "bfloat16"
 
 model:
@@ -57,15 +57,15 @@ train:
   max_steps: 30000
   gradient_checkpointing: true
   gradient_clip_val: 0.5
-  save_path: "/data/dxc/omini_four_tasks_bundle/inpaint/runs/fmow_inpaint_glor_control_miq_mma_zero_gate"
+  save_path: "runs/fmow_inpaint_glor_control_miq_mma_zero_gate"
   condition_type: "fmow_inpaint"
 
   dataset:
-    root: "/data/zjz/fmow_processed/"
-    index_path: "/data/zjz/fmow_processed/index.jsonl"
+    root: "../assets/datasets/fmow/train"
+    index_path: "../assets/datasets/fmow/train/index.jsonl"
     source_splits: ["train"]
-    test_root: "/data/zjz/fmow_test_processed"
-    test_index_path: "/data/zjz/fmow_test_processed/index.jsonl"
+    test_root: "../assets/datasets/fmow/test"
+    test_index_path: "../assets/datasets/fmow/test/index.jsonl"
     test_source_splits: ["test"]
     image_size: [512, 512]
     include_metadata: true

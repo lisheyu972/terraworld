@@ -1,5 +1,5 @@
 dtype: bfloat16
-flux_path: /data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21/
+flux_path: ../assets/models/flux
 glor_control:
   alpha_init: 0.0
   ctrl_dim: 512
@@ -35,7 +35,7 @@ train:
     include_splits:
     - train
     random_flip: true
-    root: /data/dxc/grsm/datasets/lin/grsm_opt_sar/
+    root: ../assets/datasets/sar
   gradient_checkpointing: true
   gradient_clip_val: 0.5
   lora_config:
@@ -56,7 +56,7 @@ train:
   print_every_n_steps: 10
   sample_interval: 1000000
   save_interval: 1000
-  save_path: "/data/dxc/omini_four_tasks_bundle/translation/runs/sar_to_optical_glor_control"
+  save_path: "runs/sar_to_optical_glor_control"
   wandb:
     project: OminiControl-SAR-to-Optical-GLoR-Control
-transformer_path: /data/dxc/grsm/flux1/runs/flux_git10m_full/checkpoint-8000-diffusers/
+transformer_path: ../assets/models/sar-transformer

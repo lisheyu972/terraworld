@@ -1,8 +1,8 @@
 # Complete FLUX pipeline: VAE, text encoders, tokenizers and scheduler.
-flux_path: "/data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21/"
+flux_path: "../assets/models/flux"
 
 # Initialize the DiT from the pretrained remote-sensing checkpoint.
-transformer_path: "/data/dxc/grsm/flux1/runs/flux_git10m_full/checkpoint-8000-diffusers/"
+transformer_path: "../assets/models/sar-transformer"
 dtype: "bfloat16"
 
 model:
@@ -39,11 +39,11 @@ train:
   max_steps: 30000
   gradient_checkpointing: true
   gradient_clip_val: 0.5
-  save_path: "/data/dxc/omini_four_tasks_bundle/translation/runs/sar_to_optical_glor_control"
+  save_path: "runs/sar_to_optical_glor_control"
   condition_type: "sar_to_optical"
 
   dataset:
-    root: "/data/dxc/grsm/datasets/lin/grsm_opt_sar/"
+    root: "../assets/datasets/sar"
     include_splits: ["train"]
     image_size: [256, 256]
     drop_text_prob: 0.1

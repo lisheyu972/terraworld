@@ -1,9 +1,15 @@
 paths.env
+/assets/
 translation/runtime/
 translation/runs/
 translation/outputs/
 inpaint/runtime/
 inpaint/runs/
 inpaint/outputs/
+/super_resolution/runtime/
+/super_resolution/runs/
+/super_resolution/outputs/
+/super_resolution/logs/
+/super_resolution/swanlog/
 **/__pycache__/
 **/*.pyc

@@ -1,0 +1,97 @@
+# AID 2x one-step FluxSR + GLoR: HR 512 -> synthetic bicubic LR 256.
+flux_path: "../assets/models/flux"
+transformer_path: "../assets/models/sr-transformer"
+dtype: "bfloat16"
+
+model:
+  max_sequence_length: 256
+
+glor_control:
+  enable: true
+  task: "super_resolution"
+  disable_omini_condition: true
+  ctrl_dim: 512
+  fusion_dim: 1024
+  inject_dual_indices: [6, 12, 18]
+  inject_single_indices: [12, 24, 36]
+  alpha_init: 0.001
+  global_memory:
+    pool_size: 4
+  local_retrieval:
+    sr_patch_size: 3
+  tasks:
+    super_resolution:
+      use_scale_embedding: true
+      in_channels: 5
+      feature_mode: "rgb_y_edge"
+
+fluxsr:
+  t_l: 0.4
+  guidance_scale: 3.5
+  ftd_weight: 0.25
+  mse_weight: 10.0
+  l1_weight: 1.0
+  y_mse_weight: 10.0
+  y_l1_weight: 1.0
+  ssim_weight: 0.5
+  ssim_border: 2
+  lpips_weight: 0.02
+  tv_lpips_gamma: 0.1
+  adl_weight: 0.0
+
+train:
+  stage: "rsbackbone-x2-glor-20k"
+  require_init_lora: false
+  init_lora_path: null
+  run_name_prefix: "aid-fluxsr-rsbackbone-x2-glor-20k"
+  max_steps: 20000
+  save_interval: 2000
+  log_interval: 10
+  sample_count: 4
+  devices: 3
+  strategy: "ddp_find_unused_parameters_false"
+  batch_size: 2
+  accumulate_grad_batches: 1
+  dataloader_workers: 8
+  prefetch_factor: 4
+  precision: "bf16-mixed"
+  gradient_checkpointing: false
+  allow_tf32: true
+  cudnn_benchmark: true
+  matmul_precision: "high"
+  gradient_clip_val: 1.0
+  save_path: "runs/aid_fluxsr_ftd_rsbackbone_x2_glor_20k"
+
+  dataset:
+    root: "../assets/datasets/aid"
+    train_splits: ["train"]
+    preview_splits: ["test"]
+    lr_size: 256
+    hr_size: 512
+    lr_source: "hr_downsample"
+    downsample_mode: "bicubic"
+    random_flip: true
+
+  lora_config:
+    r: 16
+    lora_alpha: 16
+    lora_dropout: 0.0
+    init_lora_weights: "gaussian"
+    target_modules: ".*x_embedder"
+
+  optimizer:
+    type: "AdamW"
+    params:
+      lr: 0.00002
+      betas: [0.9, 0.999]
+      eps: 0.00000001
+      weight_decay: 0.01
+      fused: false
+    scheduler:
+      type: "CosineAnnealingLR"
+      params:
+        T_max: 20000
+        eta_min: 0.0000005
+
+  swanlab:
+    project: "AID-FluxSR-X2-GLoR"

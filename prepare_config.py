@@ -15,7 +15,7 @@ def absolute(value: str, base: Path) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", required=True, choices=("frame", "nir", "sar", "inpaint"))
+    parser.add_argument("--task", required=True, choices=("frame", "nir", "sar", "inpaint", "sr"))
     parser.add_argument("--project-root", required=True, type=Path)
     parser.add_argument("--template", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
@@ -29,6 +29,7 @@ def main() -> None:
         "frame": "FRAME_TRANSFORMER_DIR",
         "sar": "SAR_TRANSFORMER_DIR",
         "inpaint": "INPAINT_TRANSFORMER_DIR",
+        "sr": "SR_TRANSFORMER_DIR",
     }.get(args.task)
     if transformer_variable:
         config["transformer_path"] = absolute(os.environ[transformer_variable], root)
@@ -38,7 +39,13 @@ def main() -> None:
     training = config["train"]
     training["save_path"] = str(root / "runs" / Path(training["save_path"]).name)
     dataset = training["dataset"]
-    root_variable = {"frame": "FMOW_TRAIN_ROOT", "nir": "NIR_DATA_ROOT", "sar": "SAR_DATA_ROOT", "inpaint": "FMOW_TRAIN_ROOT"}[args.task]
+    root_variable = {
+        "frame": "FMOW_TRAIN_ROOT",
+        "nir": "NIR_DATA_ROOT",
+        "sar": "SAR_DATA_ROOT",
+        "inpaint": "FMOW_TRAIN_ROOT",
+        "sr": "AID_DATA_ROOT",
+    }[args.task]
     dataset["root"] = absolute(os.environ[root_variable], root)
     if args.task in ("frame", "inpaint"):
         dataset["index_path"] = absolute(os.environ["FMOW_TRAIN_INDEX"], root)

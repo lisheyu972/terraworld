@@ -1,6 +1,6 @@
 # Complete FLUX pipeline (VAE, text encoders, tokenizers and scheduler).
-flux_path: "/data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21"
-transformer_path: "/data/dxc/grsm/flux1/runs/flux_git10m_continue_from_8000/checkpoint-16000-diffusers"
+flux_path: "../assets/models/flux"
+transformer_path: "../assets/models/frame-transformer"
 dtype: "bfloat16"
 
 model:
@@ -63,12 +63,12 @@ train:
   max_steps: 30000
   gradient_checkpointing: true
   gradient_clip_val: 0.5
-  save_path: "/data/dxc/omini_four_tasks_bundle/translation/runs/fmow_frame_prediction_glor_control_miq_mma_zero_gate32"
+  save_path: "runs/fmow_frame_prediction_glor_control_miq_mma_zero_gate32"
   condition_type: "frame_prediction"
 
   dataset:
-    root: "/data/zjz/fmow_processed"
-    index_path: "/data/zjz/fmow_processed/index.jsonl"
+    root: "../assets/datasets/fmow/train"
+    index_path: "../assets/datasets/fmow/train/index.jsonl"
     source_splits: ["train"]
     include_partitions: ["train"]
     split_ratios:

@@ -7,11 +7,13 @@ PROJECT_ROOT="${REPO_ROOT}"
 source "${REPO_ROOT}/../common.sh"
 cd "${REPO_ROOT}"
 
-# Reproduce the settings recorded by the two existing GLoR-Control outputs,
-# then add training-free RIVG-Stable. With PRESET=both, the two jobs run
-# sequentially and each job uses all six selected GPUs.
-PRESET="${PRESET:-both}"
-GPU_IDS="${GPU_IDS:-${GPU_ID:-1,2,3,4,5,6,7}}"
+# A caller-supplied checkpoint uses the standard configuration by default.
+if [[ -n "${CKPT:-}" ]]; then
+  PRESET="${PRESET:-16000}"
+else
+  PRESET="${PRESET:-both}"
+fi
+GPU_IDS="${GPU_IDS:-${GPU_ID:-0}}"
 DATA_ROOT="$(bundle_abspath "${DATA_ROOT:-${SAR_DATA_ROOT}}")"
 
 if [[ "${PRESET}" == "both" ]]; then
@@ -33,12 +35,12 @@ fi
 case "${PRESET}" in
   30000)
     DEFAULT_CONFIG="${REPO_ROOT}/train/config/sar_to_optical_glor_control_30000.yaml"
-    DEFAULT_CKPT="/data/dxc/186_backups/OminiControl-main/runs/sar_to_optical_glor_control/20260726-030518/ckpt/30000"
+    DEFAULT_CKPT="${BUNDLE_ROOT}/assets/checkpoints/sar/30000"
     DEFAULT_OUTPUT_DIR="${REPO_ROOT}/outputs/sar_to_optical_glor_control8000_30000_rivg_stable"
     ;;
   16000)
     DEFAULT_CONFIG="${REPO_ROOT}/train/config/sar_to_optical_glor_control.yaml"
-    DEFAULT_CKPT="/data/dxc/186_backups/OminiControl-main/runs/sar_to_optical_glor_control/20260724-020936/ckpt/16000"
+    DEFAULT_CKPT="${BUNDLE_ROOT}/assets/checkpoints/sar/16000"
     DEFAULT_OUTPUT_DIR="${REPO_ROOT}/outputs/sar_to_optical_glor_control_16000_rivg_stable"
     ;;
   *)

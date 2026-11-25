@@ -7,7 +7,7 @@ cd "${REPO_ROOT}"
 PROJECT_ROOT="${REPO_ROOT}"
 source "${REPO_ROOT}/../common.sh"
 
-GPU_IDS="${GPU_IDS:-${GPU_ID:-4,5,6,7}}"
+GPU_IDS="${GPU_IDS:-${GPU_ID:-0}}"
 PRETRAINED_TRANSFORMER="$(bundle_abspath "${PRETRAINED_TRANSFORMER:-${INPAINT_TRANSFORMER_DIR}}")"
 OUTPUT_DIR="$(bundle_abspath "${OUTPUT_DIR:-${REPO_ROOT}/outputs/fmow_inpaint_glor_control_miq_mma_test_rivg_stable_strong}")"
 TEST_ROOT="$(bundle_abspath "${TEST_ROOT:-${FMOW_TEST_ROOT}}")"
@@ -21,7 +21,7 @@ GUIDANCE_SCALE="${GUIDANCE_SCALE:-3.5}"
 IMAGE_GUIDANCE_SCALE="${IMAGE_GUIDANCE_SCALE:-1.0}"
 CONFIG="$(bundle_prepare_config inpaint "${CONFIG:-${REPO_ROOT}/train/config/fmow_inpaint_glor_control_miq_mma_zero_gate.yaml}")"
 RUNS_DIR="$(bundle_abspath "${RUNS_DIR:-${REPO_ROOT}/runs/fmow_inpaint_glor_control_miq_mma_zero_gate}")"
-CKPT="$(bundle_abspath "${CKPT:-/data/dxc/grsm/OminiControl-main-183/runs/fmow_inpaint_glor_control_miq_mma_zero_gate/20260802-024258/ckpt/10000}")"
+CKPT="$(bundle_abspath "${CKPT:-${BUNDLE_ROOT}/assets/checkpoints/inpaint/10000}")"
 GLOR_CKPT="$(bundle_abspath "${GLOR_CKPT:-${CKPT}/glor_control.pt}")"
 
 # Strong Stable settings selected from the reference perceptual-metric experiment.

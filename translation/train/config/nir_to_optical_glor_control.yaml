@@ -1,6 +1,6 @@
 # Load the complete original FLUX pipeline, including its bundled transformer.
 # Deliberately do not add transformer_path here.
-flux_path: "/data/dxc/model_zoo/models--black-forest-labs--FLUX.1-dev/3de623fc3c33e44ffbe2bad470d0f45bccf2eb21/"
+flux_path: "../assets/models/flux"
 dtype: "bfloat16"
 
 model:
@@ -37,11 +37,11 @@ train:
   max_steps: 30000
   gradient_checkpointing: true
   gradient_clip_val: 0.5
-  save_path: "/data/dxc/omini_four_tasks_bundle/translation/runs/nir_to_optical_glor_control"
+  save_path: "runs/nir_to_optical_glor_control"
   condition_type: "nir_to_optical"
 
   dataset:
-    root: "/data/dxc/grsm/datasets/lin/grsm_opt_nir_whu/"
+    root: "../assets/datasets/nir"
     include_splits: ["train"]
     image_size: [512, 512]
     drop_text_prob: 0.1

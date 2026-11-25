@@ -1,32 +1,31 @@
-# OminiControl Training and Inference Bundle for Four Tasks
+# TerraWorld
 
-This bundle contains training and inference launchers for four tasks: fMOW frame prediction, NIR-to-optical translation, SAR-to-optical translation, and fMOW inpainting. The `translation/` directory was copied from `186_backups/OminiControl-main`; the `inpaint/` directory was copied from `grsm/OminiControl-main-183`. Each keeps its own version of the Python modules so the inpainting code is not mixed with the translation code.
-
-The bundle includes the eight requested launchers, their configuration templates and inference tools, and the local Python modules they import: `omini/`, `glor_control/`, `toa_control/`, `scb_control/`, `observation_residual/`, and `metadata_qkv.py`. The SAR launcher also includes the helper launcher that it calls. Large datasets, the base FLUX model, pretrained Transformers, and trained LoRA checkpoints remain external and are not copied into this directory.
+This repository contains the official implementation of the paper **TerraWorld: A Conditional Generative Foundation Model for Sparse-to-Continuous Earth Observation**.
 
 ## Install the environment
 
-Use Linux with an NVIDIA GPU and a CUDA-compatible PyTorch installation. For example:
+Use Linux with an NVIDIA GPU and a CUDA-compatible PyTorch installation. Run the commands below and the training and inference examples from the repository root.
 
 ```bash
-conda create -n omini-four-tasks python=3.10 -y
-conda activate omini-four-tasks
+conda create -n terraworld python=3.10 -y
+conda activate terraworld
 python -m pip install --upgrade pip
 python -m pip install torch torchvision
-python -m pip install -r /data/dxc/omini_four_tasks_bundle/requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-If PyTorch cannot detect CUDA, install a GPU build of PyTorch that matches your driver and CUDA environment, then install `requirements.txt`. Copies of the original training dependency lists are retained as `requirements-source.txt` in each task directory. The bundle-level requirements file covers the dependencies used by these four tasks.
+If PyTorch cannot detect CUDA, install a PyTorch build that matches your GPU driver and CUDA environment, then install the dependencies in `requirements.txt`.
 
 ## Set external paths
 
+Provide the datasets, model weights, and inference checkpoints required for the task you want to run. Copy the sample configuration and set the paths to your local files.
+
 ```bash
-cd /data/dxc/omini_four_tasks_bundle
 cp paths.env.example paths.env
-# Edit paths.env and replace any missing locations with absolute paths on your machine.
+# Open paths.env, uncomment the variables for your task, and set their absolute paths.
 ```
 
-`paths.env.example` contains paths used on the original machine. You can also set these variables in the environment before invoking a launcher.
+You can also export these variables before invoking a launcher. Values set in `paths.env` take precedence.
 
 | Variable | Purpose |
 | --- | --- |
@@ -34,55 +33,73 @@ cp paths.env.example paths.env
 | `FRAME_TRANSFORMER_DIR` | Pretrained Transformer for fMOW frame prediction |
 | `SAR_TRANSFORMER_DIR` | Pretrained Transformer for SAR-to-optical translation |
 | `INPAINT_TRANSFORMER_DIR` | Pretrained Transformer for fMOW inpainting |
+| `SR_TRANSFORMER_DIR` | Pretrained remote-sensing Transformer for super-resolution |
 | `FMOW_TRAIN_ROOT`, `FMOW_TRAIN_INDEX` | fMOW training data and its `index.jsonl` |
 | `FMOW_TEST_ROOT`, `FMOW_TEST_INDEX` | fMOW inpainting test data and its `index.jsonl` |
 | `NIR_DATA_ROOT`, `SAR_DATA_ROOT` | Paired NIR and SAR datasets |
+| `AID_DATA_ROOT` | Paired AID dataset for super-resolution |
 
-Each launcher locates its own directory and generates an absolute-path YAML configuration under its task directory's `runtime/config/`. New training runs are written to that task directory's `runs/`; inference results are written to `outputs/`. If you move the bundle, the launchers recalculate their internal paths from the new location. Relative values passed through `CKPT`, `CONFIG`, or `OUTPUT_DIR` are resolved from the corresponding task directory.
+The default model and dataset paths are under `assets/models/` and `assets/datasets/` at the repository root. Each fMOW index defaults to `index.jsonl` inside its dataset directory.
 
 ## Train
 
-These launchers can be invoked from any working directory. They retain the original defaults for GPUs, batch size, and training steps. Override `GPU_IDS`, `BATCH_SIZE`, `GRAD_ACCUM_STEPS`, `MAX_STEPS`, or `SAVE_EVERY_N_STEPS` as needed.
+Set `GPU_IDS` to the GPU indices available on your system. `BATCH_SIZE` sets the batch size per GPU.
 
 ```bash
-bash /data/dxc/omini_four_tasks_bundle/translation/train/script/train_fmow_frame_prediction_more_layers_glor_control_miq_mma.sh
-bash /data/dxc/omini_four_tasks_bundle/translation/train/script/train_nir_to_optical_more_layers_glor_control.sh
-bash /data/dxc/omini_four_tasks_bundle/translation/train/script/train_sar_to_optical_more_layers_glor_control.sh
-bash /data/dxc/omini_four_tasks_bundle/inpaint/train/script/train_fmow_inpaint_more_layers_glor_control_miq_mma.sh
+GPU_IDS=0 bash translation/train/script/train_fmow_frame_prediction_more_layers_glor_control_miq_mma.sh
+GPU_IDS=0 bash translation/train/script/train_nir_to_optical_more_layers_glor_control.sh
+GPU_IDS=0 bash translation/train/script/train_sar_to_optical_more_layers_glor_control.sh
+GPU_IDS=0 bash inpaint/train/script/train_fmow_inpaint_more_layers_glor_control_miq_mma.sh
 ```
 
-For example, to train fMOW frame prediction on four GPUs:
+The following example trains fMOW frame prediction on four GPUs.
 
 ```bash
-GPU_IDS=0,1,2,3 BATCH_SIZE=2 MAX_STEPS=15000 \
-  bash /data/dxc/omini_four_tasks_bundle/translation/train/script/train_fmow_frame_prediction_more_layers_glor_control_miq_mma.sh
+GPU_IDS=0,1,2,3 BATCH_SIZE=2 \
+  bash translation/train/script/train_fmow_frame_prediction_more_layers_glor_control_miq_mma.sh
 ```
 
-`BATCH_SIZE` is the per-GPU batch size. The effective global batch size is `BATCH_SIZE × GRAD_ACCUM_STEPS × number of GPUs`. These launchers initialize new LoRA weights from the pretrained model. Resuming the complete training state of an earlier run requires a separate implementation.
+These launchers initialize new LoRA weights from the pretrained model. Resuming the complete training state of an earlier run requires a separate implementation.
 
 ## Run inference
 
-The default `CKPT` values point to historical checkpoints in the original projects. Set `CKPT` explicitly when moving the bundle or using a newly trained checkpoint. A checkpoint must contain `text.safetensors`, `main.safetensors`, `condition.safetensors`, and `glor_control.pt`. The two MIQ-MMA tasks also require `metadata_qkv.pt`. By default, `GLOR_CKPT` resolves to `CKPT/glor_control.pt`.
+Set `CKPT` to the path of a checkpoint directory containing `text.safetensors`, `main.safetensors`, `condition.safetensors`, and `glor_control.pt`. The two MIQ-MMA tasks also require `metadata_qkv.pt`. By default, `GLOR_CKPT` resolves to `CKPT/glor_control.pt`.
 
 ```bash
-CKPT=/absolute/path/to/frame/ckpt/15000 GPU_IDS=0,1,2,3 \
-  bash /data/dxc/omini_four_tasks_bundle/translation/train/script/infer_fmow_frame_prediction_more_layers_glor_control_miq_mma_rivg_stable_strong.sh
+CKPT=/path/to/checkpoints/frame GPU_IDS=0,1,2,3 \
+  bash translation/train/script/infer_fmow_frame_prediction_more_layers_glor_control_miq_mma_rivg_stable_strong.sh
 
-CKPT=/absolute/path/to/nir/ckpt/15000 GPU_IDS=0 \
-  bash /data/dxc/omini_four_tasks_bundle/translation/train/script/infer_nir_to_optical_more_layers_glor_control_rivg_stable.sh
+CKPT=/path/to/checkpoints/nir GPU_IDS=0 \
+  bash translation/train/script/infer_nir_to_optical_more_layers_glor_control_rivg_stable.sh
 
-CKPT=/absolute/path/to/sar/ckpt/15000 PRESET=16000 GPU_IDS=0 \
-  bash /data/dxc/omini_four_tasks_bundle/translation/train/script/infer_sar_to_optical_more_layers_glor_control_rivg_stable.sh
+CKPT=/path/to/checkpoints/sar GPU_IDS=0 \
+  bash translation/train/script/infer_sar_to_optical_more_layers_glor_control_rivg_stable.sh
 
-CKPT=/absolute/path/to/inpaint/ckpt/15000 GPU_IDS=0,1,2,3 \
-  bash /data/dxc/omini_four_tasks_bundle/inpaint/train/script/infer_fmow_inpaint_more_layers_glor_control_miq_mma_rivg_stable_strong.sh
+CKPT=/path/to/checkpoints/inpaint GPU_IDS=0,1,2,3 \
+  bash inpaint/train/script/infer_fmow_inpaint_more_layers_glor_control_miq_mma_rivg_stable_strong.sh
 ```
 
-The SAR launcher retains `PRESET=30000|16000|both`; its default, `both`, runs the two presets in sequence. Select a single preset when supplying a custom checkpoint. Additional inference arguments can be appended to a launcher command, such as `--max-samples 100`. Inference uses unshifted inputs and retains each launcher's original RIVG settings.
+You can append inference arguments to a launcher command, for example `--max-samples 100`.
 
-## Path and file notes
+## Super-resolution on AID
 
-- Launchers resolve their code entry points, generated configurations, run directories, and output directories to absolute paths. They do not depend on the shell's starting directory.
-- `train/config/*.yaml` files are templates. Runs use the generated `runtime/config/*.yaml` files, whose model, dataset, and output paths are absolute.
-- Original `runs/` and `outputs/` directories, datasets, and large model weights were not copied. Update `paths.env` and the inference `CKPT` value after moving the bundle.
-- This was a code and path cleanup only. The environment was not installed, and training, inference, and tests were not run.
+FluxSR-FTD with GLoR supports ×2, ×4, and ×8 super-resolution at an output size of 512 × 512 pixels. Set `FLUX_MODEL_DIR`, `SR_TRANSFORMER_DIR`, and `AID_DATA_ROOT` in `paths.env`. Set `SWANLAB_API_KEY` to enable training logs in SwanLab. See the [AID dataset guide](super_resolution/docs/FluxSR-FTD_AID_README.md) for the required directory layout and metadata.
+
+```bash
+EXPERIMENT=x2_glor GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_scale_ablation.sh
+GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_ftd_rsbackbone_glor.sh
+EXPERIMENT=x8_glor GPU_IDS=0 bash super_resolution/train/script/train_aid_fluxsr_scale_ablation.sh
+
+SCALE=4 CKPT=/path/to/checkpoints/sr GPU_ID=0 \
+  bash super_resolution/train/script/infer_aid_fluxsr_ftd.sh
+```
+
+Set `SCALE` to match the checkpoint. Super-resolution checkpoints use `default.safetensors` for LoRA and `glor_control.pt` for GLoR. Inference saves PNG predictions, comparison panels, and `manifest.json` under `super_resolution/outputs/`. Use `--visualization-count 0` to skip the panels.
+
+For LoRA-only training at ×2 or ×8, set `EXPERIMENT=x2` or `EXPERIMENT=x8`. The ×4 LoRA-only launcher is `super_resolution/train/script/train_aid_fluxsr_ftd_rsbackbone_best.sh`. For LoRA-only inference, set `CONFIG` to the matching YAML, such as `train/config/aid_fluxsr_ftd_rsbackbone_x2.yaml`.
+
+## Configuration and outputs
+
+- Launchers generate runtime configurations in `runtime/config/` from the `train/config/` templates under the corresponding task directory.
+- Training runs are saved under `runs/` and inference results under `outputs/` in the corresponding task directory.
+- Relative paths supplied through `CKPT`, `CONFIG`, or `OUTPUT_DIR` are resolved from the corresponding task directory.

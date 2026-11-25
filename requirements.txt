@@ -16,3 +16,6 @@ lightning
 datasets
 prodigyopt
 wandb
+swanlab
+lpips
+torchmetrics>=1.8
