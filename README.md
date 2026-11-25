@@ -2,6 +2,40 @@
 
 This repository contains the official implementation of the paper **TerraWorld: A Conditional Generative Foundation Model for Sparse-to-Continuous Earth Observation**.
 
+## Qualitative results
+
+### Temporal interpolation and extrapolation on fMOW
+
+![Two dated fMOW observations, the target image, and predictions from TerraWorld and comparison methods](docs/figures/temporal-interpolation.png)
+
+<details>
+<summary>AID super-resolution at ×2 and ×4</summary>
+
+![AID super-resolution results with enlarged regions marked in red](docs/figures/aid-super-resolution.png)
+
+</details>
+
+<details>
+<summary>Image inpainting</summary>
+
+![Masked inputs, ground truth, and inpainting predictions for three remote sensing images](docs/figures/image-inpainting.png)
+
+</details>
+
+<details>
+<summary>SAR-to-optical generation</summary>
+
+![SAR inputs, registered optical targets, and generated optical images](docs/figures/sar-to-optical.png)
+
+</details>
+
+<details>
+<summary>NIR-to-optical generation</summary>
+
+![Near-infrared inputs, registered optical targets, and generated optical images](docs/figures/nir-to-optical.png)
+
+</details>
+
 ## Install the environment
 
 Use Linux with an NVIDIA GPU and a CUDA-compatible PyTorch installation. Run the commands below and the training and inference examples from the repository root.
